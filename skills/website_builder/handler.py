@@ -410,9 +410,12 @@ def deploy_to_vercel(project_path: Path) -> str:
     if not VERCEL_TOKEN:
         raise ValueError("VERCEL_TOKEN not found in environment variables")
     
-    # Run vercel deploy command
+    # Determine vercel command (Windows uses vercel.cmd, Unix uses vercel)
+    vercel_cmd = "vercel.cmd" if os.name == "nt" else "vercel"
+    
+    # Run vercel deploy command with --public to ensure it's publicly accessible
     result = subprocess.run(
-        ["vercel", "--prod", "--yes", "--token", VERCEL_TOKEN],
+        [vercel_cmd, "--prod", "--yes", "--public", "--token", VERCEL_TOKEN],
         cwd=project_path,
         capture_output=True,
         text=True
@@ -421,23 +424,39 @@ def deploy_to_vercel(project_path: Path) -> str:
     if result.returncode != 0:
         raise RuntimeError(f"Vercel deployment failed: {result.stderr}")
     
-    # Extract URL from output
+    # Extract URL from output - look for production URL patterns
     output = result.stdout.strip()
-    lines = output.split('\n')
-    url = None
-    for line in reversed(lines):
-        line = line.strip()
-        if line.startswith('https://'):
-            url = line
-            break
     
+    # Try to find production URL (prefer production domain over preview)
+    # Vercel output format: "Production: https://project-name.vercel.app"
+    # or "https://project-name.vercel.app" on its own line
+    url = None
+    
+    # Look for "Production:" line first
+    for line in output.split('\n'):
+        line = line.strip()
+        if 'production' in line.lower() and 'https://' in line.lower():
+            url_match = re.search(r'https://[^\s]+\.vercel\.app[^\s]*', line)
+            if url_match:
+                url = url_match.group(0)
+                break
+    
+    # If no production line found, look for any vercel.app URL
     if not url:
         url_match = re.search(r'https://[^\s]+\.vercel\.app[^\s]*', output)
         if url_match:
             url = url_match.group(0)
     
+    # Fallback: look for any https:// URL
     if not url:
-        raise RuntimeError("Could not extract deployment URL from Vercel output")
+        for line in reversed(output.split('\n')):
+            line = line.strip()
+            if line.startswith('https://'):
+                url = line
+                break
+    
+    if not url:
+        raise RuntimeError(f"Could not extract deployment URL from Vercel output:\n{output}")
     
     return url
 
@@ -474,6 +493,13 @@ def handle(prompt: str, **kwargs) -> dict:
         js_content = create_js()
         (project_path / "script.js").write_text(js_content)
         
+        # Create vercel.json to ensure public deployment
+        vercel_config = {
+            "version": 2,
+            "public": True
+        }
+        (project_path / "vercel.json").write_text(json.dumps(vercel_config, indent=2))
+        
         # Deploy to Vercel
         url = deploy_to_vercel(project_path)
         
@@ -504,7 +530,10 @@ if __name__ == "__main__":
     if result["status"] == "success":
         print(f"\n✅ Website created successfully!")
         print(f"📁 Local path: {result['path']}")
-        print(f"🌍 Live URL:   {result['url']}")
+        #dont use result['url'] because it is not global url
+        global_url = 'https://' + result['path'].split('\\')[-1] + '.vercel.app'
+        print(f"🔍 Global URL: {global_url}")
+        print(f"🔍 Site name: {result}")
     else:
         print(f"\n❌ Error: {result['error']}")
         sys.exit(1)

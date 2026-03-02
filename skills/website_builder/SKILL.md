@@ -1,4 +1,3 @@
-@@ -0,0 +1,114 @@
 ---
 name: website_builder
 description: "Generate a complete static website from a prompt and deploy it to Vercel. Use when: user asks to build, create, or make a website, landing page, portfolio, or any static web page. Returns the live hosted URL. NOT for: dynamic web apps, backend APIs, or database-driven sites."
@@ -43,12 +42,17 @@ Run the website builder handler with the user's prompt (using the project's virt
 .venv/bin/python skills/website_builder/handler.py "<user's website description>"
 ```
 
+On Windows, this also works:
+```bash
+.venv/bin/python skills\website_builder\handler.py "<user's website description>"
+```
+
 ### Example
 
 **User:** "Build me a portfolio website for a photographer named Alex who specializes in landscape photography"
 
 ```bash
-.venv/bin/python skills/website_builder/handler.py "Build a portfolio website for a photographer named Alex who specializes in landscape photography"
+python skills/website_builder/handler.py "Build a portfolio website for a photographer named Alex who specializes in landscape photography"
 ```
 
 ### Output

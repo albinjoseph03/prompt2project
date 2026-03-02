@@ -126,3 +126,8 @@ dist/protocol.schema.json
 # Python projects
 .venv/
 projects/
+.cursor/
+.openclaw/
+HEARTBEAT.md
+SOUL.md
+TOOLS.md
