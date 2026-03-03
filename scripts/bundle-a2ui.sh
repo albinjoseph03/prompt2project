@@ -8,10 +8,10 @@ on_error() {
 trap on_error ERR
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-HASH_FILE="$ROOT_DIR/src/canvas-host/a2ui/.bundle.hash"
-OUTPUT_FILE="$ROOT_DIR/src/canvas-host/a2ui/a2ui.bundle.js"
-A2UI_RENDERER_DIR="$ROOT_DIR/vendor/a2ui/renderers/lit"
-A2UI_APP_DIR="$ROOT_DIR/apps/shared/OpenClawKit/Tools/CanvasA2UI"
+HASH_FILE="src/canvas-host/a2ui/.bundle.hash"
+OUTPUT_FILE="src/canvas-host/a2ui/a2ui.bundle.js"
+A2UI_RENDERER_DIR="vendor/a2ui/renderers/lit"
+A2UI_APP_DIR="apps/shared/OpenClawKit/Tools/CanvasA2UI"
 
 # Docker builds exclude vendor/apps via .dockerignore.
 # In that environment we can keep a prebuilt bundle only if it exists.
@@ -25,14 +25,14 @@ if [[ ! -d "$A2UI_RENDERER_DIR" || ! -d "$A2UI_APP_DIR" ]]; then
 fi
 
 INPUT_PATHS=(
-  "$ROOT_DIR/package.json"
-  "$ROOT_DIR/pnpm-lock.yaml"
-  "$A2UI_RENDERER_DIR"
-  "$A2UI_APP_DIR"
+  "package.json"
+  "pnpm-lock.yaml"
+  "vendor/a2ui/renderers/lit"
+  "apps/shared/OpenClawKit/Tools/CanvasA2UI"
 )
 
 compute_hash() {
-  ROOT_DIR="$ROOT_DIR" node --input-type=module - "${INPUT_PATHS[@]}" <<'NODE'
+  node.exe --input-type=module - "${INPUT_PATHS[@]}" <<'NODE'
 import { createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -85,11 +85,11 @@ if [[ -f "$HASH_FILE" ]]; then
   fi
 fi
 
-pnpm -s exec tsc -p "$A2UI_RENDERER_DIR/tsconfig.json"
+pnpm.cmd -s exec tsc -p "$A2UI_RENDERER_DIR/tsconfig.json"
 if command -v rolldown >/dev/null 2>&1; then
   rolldown -c "$A2UI_APP_DIR/rolldown.config.mjs"
 else
-  pnpm -s dlx rolldown -c "$A2UI_APP_DIR/rolldown.config.mjs"
+  pnpm.cmd -s dlx rolldown -c "$A2UI_APP_DIR/rolldown.config.mjs"
 fi
 
 echo "$current_hash" > "$HASH_FILE"
